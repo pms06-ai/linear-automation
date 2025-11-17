@@ -1,0 +1,86 @@
+name: Deploy to Google Cloud Functions
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+      
+      - name: Deploy Daily Journal Function
+        run: |
+          gcloud functions deploy linear-daily-journal \
+            --gen2 \
+            --runtime=python311 \
+            --region=us-central1 \
+            --source=./functions/daily-journal \
+            --entry-point=create_daily_journal \
+            --trigger-http \
+            --allow-unauthenticated \
+            --set-env-vars LINEAR_API_KEY=${{ secrets.LINEAR_API_KEY }}
+      
+      - name: Deploy BigQuery Monitor Function
+        run: |
+          gcloud functions deploy linear-bq-monitor \
+            --gen2 \
+            --runtime=python311 \
+            --region=us-central1 \
+            --source=./functions/bq-monitor \
+            --entry-point=check_bigquery_jobs \
+            --trigger-http \
+            --allow-unauthenticated \
+            --set-env-vars LINEAR_API_KEY=${{ secrets.LINEAR_API_KEY }},GCP_PROJECT_ID=tksa-477908
+      
+      - name: Create Cloud Scheduler Jobs
+        run: |
+          # Daily Journal at 9:30 AM ET (Mon-Fri)
+          gcloud scheduler jobs create http linear-daily-journal-trigger \
+            --location=us-central1 \
+            --schedule="30 14 * * 1-5" \
+            --time-zone="America/New_York" \
+            --uri="$(gcloud functions describe linear-daily-journal --region=us-central1 --gen2 --format='value(serviceConfig.uri)')" \
+            --http-method=GET \
+            --attempt-deadline=300s \
+            || gcloud scheduler jobs update http linear-daily-journal-trigger \
+            --location=us-central1 \
+            --schedule="30 14 * * 1-5" \
+            --time-zone="America/New_York" \
+            --uri="$(gcloud functions describe linear-daily-journal --region=us-central1 --gen2 --format='value(serviceConfig.uri)')" \
+            --http-method=GET \
+            --attempt-deadline=300s
+          
+          # BigQuery Monitor every 15 minutes
+          gcloud scheduler jobs create http linear-bq-monitor-trigger \
+            --location=us-central1 \
+            --schedule="*/15 * * * *" \
+            --time-zone="America/New_York" \
+            --uri="$(gcloud functions describe linear-bq-monitor --region=us-central1 --gen2 --format='value(serviceConfig.uri)')" \
+            --http-method=GET \
+            --attempt-deadline=300s \
+            || gcloud scheduler jobs update http linear-bq-monitor-trigger \
+            --location=us-central1 \
+            --schedule="*/15 * * * *" \
+            --time-zone="America/New_York" \
+            --uri="$(gcloud functions describe linear-bq-monitor --region=us-central1 --gen2 --format='value(serviceConfig.uri)')" \
+            --http-method=GET \
+            --attempt-deadline=300s
