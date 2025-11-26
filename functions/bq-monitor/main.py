@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 
 # Configure logging
@@ -26,8 +26,7 @@ def check_bigquery_jobs(request):
         logger.error("GCP_PROJECT_ID not configured")
         return {"error": "GCP_PROJECT_ID not configured"}, 500
     
-    # For now, return a placeholder response
-    # Full BigQuery monitoring implementation would require google-cloud-bigquery
+    # TODO: Implement actual BigQuery job monitoring with google-cloud-bigquery
     logger.info(f"Monitoring BigQuery jobs for project: {project_id}")
     
     return {

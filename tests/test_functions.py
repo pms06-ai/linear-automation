@@ -37,6 +37,7 @@ class TestDailyJournal:
     def test_successful_issue_creation(self):
         """Test successful issue creation"""
         mock_response = MagicMock()
+        # Mock response data - the date here is just test data, actual function uses current date
         mock_response.json.side_effect = [
             {"data": {"teams": {"nodes": [{"id": "team-123", "name": "Test Team"}]}}},
             {"data": {"issueCreate": {"success": True, "issue": {"id": "issue-123", "identifier": "TT-1", "title": "Trading Journal - 2024-01-01"}}}}
