@@ -22,13 +22,12 @@ This repository contains Google Cloud Functions that automate interactions with 
 │   └── workflows/
 │       └── deploy.yml          # GitHub Actions deployment workflow
 ├── functions/
-│   ├── daily-journal/
-│   │   ├── main.py             # Cloud Function entry point
-│   │   └── requirements.txt    # Python dependencies
-│   └── bq-monitor/             # BigQuery monitoring function
-│       ├── main.py
-│       └── requirements.txt
+│   └── daily-journal/
+│       ├── main.py             # Cloud Function entry point
+│       └── requirements.txt    # Python dependencies
 ```
+
+Note: Additional functions (e.g., `bq-monitor/`) may be added in the `functions/` directory following the same structure.
 
 ## Coding Standards
 
